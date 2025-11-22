@@ -19,15 +19,24 @@ tok_regex = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in token_specifi
 
 def lexer(code):
     tokens, symbol_table, id_counter = [], {}, 1
+    prev_token_kind = None
+    
     for mo in re.finditer(tok_regex, code):
         kind, value = mo.lastgroup, mo.group()
+        
+        # Check for invalid token sequences (NUMBER followed by ID without operator)
+        if prev_token_kind == "NUMBER" and kind == "ID":
+            raise RuntimeError(f"Syntax error: number cannot be directly followed by identifier '{value}' without an operator")
+        
         if kind == "ID":
             if value not in symbol_table:
                 symbol_table[value] = f'id{id_counter}'
                 id_counter += 1
             tokens.append(('ID', symbol_table[value], value))
+            prev_token_kind = "ID"
         elif kind in ["NUMBER", "ASSIGN", "OP", "LPAREN", "RPAREN"]:
             tokens.append((kind, value))
+            prev_token_kind = kind
         elif kind == "SKIP":
             continue
         else:
@@ -128,6 +137,92 @@ def semantic_analysis(node, type_table):
             if right_type == 'int': mark_leaves_for_coercion(node.right)
 
 
+# --- Intermediate Code Generator ---
+def collect_conversions(node, type_table, conversions, temp_counter, skip_left_assign=False):
+    """Collect all type conversions needed upfront"""
+    if not node:
+        return temp_counter
+    
+    # Skip the left side of assignment (the variable being assigned to)
+    if skip_left_assign and node.node_type == 'ASSIGN':
+        # Only collect from the right side (the expression)
+        temp_counter = collect_conversions(node.right, type_table, conversions, temp_counter, False)
+        return temp_counter
+    
+    # Handle leaf nodes that need conversion
+    if node.node_type in ['ID', 'NUMBER'] and node.type_info == "int to float":
+        # Create a unique key for this conversion
+        if node.node_type == 'ID':
+            key = ('ID', node.original_name)
+            if key not in conversions:
+                temp_name = f"temp{temp_counter}"
+                temp_counter += 1
+                conversions[key] = (temp_name, f"{temp_name} = float({node.original_name})")
+        elif node.node_type == 'NUMBER':
+            key = ('NUMBER', node.value)
+            if key not in conversions:
+                temp_name = f"temp{temp_counter}"
+                temp_counter += 1
+                conversions[key] = (temp_name, f"{temp_name} = float({node.value})")
+    
+    # Recursively collect from children
+    temp_counter = collect_conversions(node.left, type_table, conversions, temp_counter, False)
+    temp_counter = collect_conversions(node.right, type_table, conversions, temp_counter, False)
+    
+    return temp_counter
+
+
+def generate_icg(node, type_table, instructions, temp_counter, conversions=None):
+    """Generate three-address code from semantic tree"""
+    if not node:
+        return None, temp_counter
+    
+    # Handle leaf nodes (ID and NUMBER)
+    if node.node_type == 'ID':
+        var_name = node.original_name
+        
+        # If this ID needs type conversion, return the temp that was created upfront
+        if node.type_info == "int to float":
+            key = ('ID', var_name)
+            if conversions and key in conversions:
+                return conversions[key][0], temp_counter
+        
+        return var_name, temp_counter
+    
+    elif node.node_type == 'NUMBER':
+        # If number needs conversion, return the temp that was created upfront
+        if node.type_info == "int to float":
+            key = ('NUMBER', node.value)
+            if conversions and key in conversions:
+                return conversions[key][0], temp_counter
+        
+        return node.value, temp_counter
+    
+    # Handle assignment node
+    elif node.node_type == 'ASSIGN':
+        # Generate code for the right side (expression)
+        right_result, temp_counter = generate_icg(node.right, type_table, instructions, temp_counter, conversions)
+        # Assign to the left side variable
+        var_name = node.left.original_name
+        instructions.append(f"{var_name} = {right_result}")
+        return var_name, temp_counter
+    
+    # Handle operators
+    elif node.node_type == 'OP':
+        # Generate code for left operand
+        left_result, temp_counter = generate_icg(node.left, type_table, instructions, temp_counter, conversions)
+        # Generate code for right operand
+        right_result, temp_counter = generate_icg(node.right, type_table, instructions, temp_counter, conversions)
+        
+        # Create a new temp for this operation
+        temp_name = f"temp{temp_counter}"
+        temp_counter += 1
+        instructions.append(f"{temp_name} = {left_result} {node.value} {right_result}")
+        return temp_name, temp_counter
+    
+    return None, temp_counter
+
+
 # --- Modern Dark GUI using CTk ---
 class CompilerGUI(ctk.CTk):
     def __init__(self):
@@ -142,16 +237,20 @@ class CompilerGUI(ctk.CTk):
 
         self.tokens, self.type_vars = [], {}
 
+        # Create main scrollable frame
+        self.main_frame = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.main_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
         # --- Source Code Input ---
-        self.code_label = ctk.CTkLabel(self, text="Source Code", font=("Segoe UI", 18, "bold"))
+        self.code_label = ctk.CTkLabel(self.main_frame, text="Source Code", font=("Segoe UI", 18, "bold"))
         self.code_label.pack(pady=(10, 0))
 
-        self.code_input = ctk.CTkTextbox(self, height=100, font=("Consolas", 13))
+        self.code_input = ctk.CTkTextbox(self.main_frame, height=100, font=("Consolas", 13))
         self.code_input.pack(padx=15, pady=10, fill="x")
         self.code_input.insert("0.0", "Z = 2 * y + 2.9 * X")
 
         # --- Buttons ---
-        self.button_frame = ctk.CTkFrame(self)
+        self.button_frame = ctk.CTkFrame(self.main_frame)
         self.button_frame.pack(pady=10)
 
         self.analyze_button = ctk.CTkButton(self.button_frame, text="1. Analyze Code & Set Types", command=self.run_lexical)
@@ -161,33 +260,40 @@ class CompilerGUI(ctk.CTk):
         self.generate_button.grid(row=0, column=1, padx=10)
 
         # --- Lexical Output ---
-        self.lexical_label = ctk.CTkLabel(self, text="Lexical Analyzer", font=("Segoe UI", 16, "bold"))
+        self.lexical_label = ctk.CTkLabel(self.main_frame, text="Lexical Analyzer", font=("Segoe UI", 16, "bold"))
         self.lexical_label.pack(pady=(10, 0))
 
-        self.lexical_output = ctk.CTkTextbox(self, height=80, font=("Consolas", 12))
+        self.lexical_output = ctk.CTkTextbox(self.main_frame, height=80, font=("Consolas", 12))
         self.lexical_output.pack(padx=15, pady=5, fill="x")
 
         # --- Variable Type Selector ---
-        self.type_frame = ctk.CTkFrame(self)
+        self.type_frame = ctk.CTkFrame(self.main_frame)
         self.type_frame.pack(padx=10, pady=10, fill="x")
 
         # --- Syntax Tree ---
-        self.syntax_label = ctk.CTkLabel(self, text="Syntax Tree", font=("Segoe UI", 16, "bold"))
+        self.syntax_label = ctk.CTkLabel(self.main_frame, text="Syntax Tree", font=("Segoe UI", 16, "bold"))
         self.syntax_label.pack(pady=(10, 0))
-        self.syntax_canvas = tk.Canvas(self, bg="#1E1E1E", highlightthickness=1, highlightbackground="#333")
-        self.syntax_canvas.pack(padx=10, pady=5, fill="both", expand=True)
+        self.syntax_canvas = tk.Canvas(self.main_frame, bg="#1E1E1E", highlightthickness=1, highlightbackground="#333", height=200)
+        self.syntax_canvas.pack(padx=10, pady=5, fill="x")
 
         # --- Semantic Tree ---
-        self.semantic_label = ctk.CTkLabel(self, text="Semantic Tree", font=("Segoe UI", 16, "bold"))
+        self.semantic_label = ctk.CTkLabel(self.main_frame, text="Semantic Tree", font=("Segoe UI", 16, "bold"))
         self.semantic_label.pack(pady=(10, 0))
-        self.semantic_canvas = tk.Canvas(self, bg="#1E1E1E", highlightthickness=1, highlightbackground="#333")
-        self.semantic_canvas.pack(padx=10, pady=5, fill="both", expand=True)
+        self.semantic_canvas = tk.Canvas(self.main_frame, bg="#1E1E1E", highlightthickness=1, highlightbackground="#333", height=200)
+        self.semantic_canvas.pack(padx=10, pady=5, fill="x")
+
+        # --- ICG Output ---
+        self.icg_label = ctk.CTkLabel(self.main_frame, text="Intermediate Code Generation (ICG)", font=("Segoe UI", 16, "bold"))
+        self.icg_label.pack(pady=(10, 0))
+        self.icg_output = ctk.CTkTextbox(self.main_frame, height=120, font=("Consolas", 12))
+        self.icg_output.pack(padx=15, pady=(5, 15), fill="x")
 
     def run_lexical(self):
         for widget in self.type_frame.winfo_children(): widget.destroy()
         self.lexical_output.delete("1.0", tk.END)
         self.syntax_canvas.delete("all")
         self.semantic_canvas.delete("all")
+        self.icg_output.delete("1.0", tk.END)
         self.generate_button.configure(state="disabled")
         self.type_vars = {}
 
@@ -213,6 +319,7 @@ class CompilerGUI(ctk.CTk):
     def run_parsing(self):
         self.syntax_canvas.delete("all")
         self.semantic_canvas.delete("all")
+        self.icg_output.delete("1.0", tk.END)
 
         try:
             type_table = {var: type_var.get() for var, type_var in self.type_vars.items()}
@@ -224,8 +331,29 @@ class CompilerGUI(ctk.CTk):
             self.draw_tree(self.syntax_canvas, syntax_tree, width/2, 40, width/4, 70)
             self.draw_semantic_tree(self.semantic_canvas, semantic_tree, type_table, width/2, 40, width/4, 80)
 
+            # Generate ICG
+            icg_tree = Parser(self.tokens).parse()
+            semantic_analysis(icg_tree, type_table)
+            
+            # First, collect all conversions needed (skip left side of assignment)
+            conversions = {}
+            temp_counter = collect_conversions(icg_tree, type_table, conversions, 1, skip_left_assign=True)
+            
+            # Add all conversion instructions at the start
+            instructions = []
+            for key, (temp_name, instruction) in sorted(conversions.items(), key=lambda x: x[1][0]):
+                instructions.append(instruction)
+            
+            # Then generate the rest of the code
+            generate_icg(icg_tree, type_table, instructions, temp_counter, conversions)
+            
+            # Display ICG
+            icg_text = "\n".join(instructions)
+            self.icg_output.insert(tk.END, icg_text)
+
         except Exception as e:
             self.syntax_canvas.create_text(400, 150, text=f"Error: {e}", fill="red", font=("Segoe UI", 12))
+            self.icg_output.insert(tk.END, f"Error: {e}")
 
     def draw_tree(self, canvas, node, x, y, x_off, y_off):
         if not node: return
