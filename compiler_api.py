@@ -60,6 +60,37 @@ def lexer(code):
     return tokens, symbol_table
 
 
+# --- Hybrid Lexer (uses V1, V2 instead of id1, id2, and "is" instead of "=") ---
+def hybrid_lexer(code):
+    tokens, symbol_table, id_counter = [], {}, 1
+    prev_token_kind = None
+
+    for mo in re.finditer(tok_regex, code):
+        kind, value = mo.lastgroup, mo.group()
+
+        if prev_token_kind == "NUMBER" and kind == "ID":
+            raise RuntimeError(
+                f"Syntax error: number cannot be directly followed by identifier '{value}' without an operator")
+
+        if kind == "ID":
+            if value not in symbol_table:
+                symbol_table[value] = f'V{id_counter}'
+                id_counter += 1
+            tokens.append(('ID', symbol_table[value], value))
+            prev_token_kind = "ID"
+        elif kind == "ASSIGN":
+            tokens.append(('ASSIGN', 'is'))
+            prev_token_kind = kind
+        elif kind in ["NUMBER", "OP", "LPAREN", "RPAREN"]:
+            tokens.append((kind, value))
+            prev_token_kind = kind
+        elif kind == "SKIP":
+            continue
+        else:
+            raise RuntimeError(f"Unexpected character {value!r}")
+    return tokens, symbol_table
+
+
 # --- Syntax Analyzer ---
 class Node:
     def __init__(self, value, left=None, right=None, node_type="OP", original_name=None):
@@ -171,6 +202,71 @@ def semantic_analysis(node, type_table):
         if left_type != right_type:
             if left_type == 'int': mark_leaves_for_coercion(node.left)
             if right_type == 'int': mark_leaves_for_coercion(node.right)
+
+
+# --- Direct Execution (Hybrid Approach Phase 4) ---
+def direct_execution(node, value_table, type_table):
+    """
+    Evaluate the tree and annotate each node with its computed value.
+    Returns the computed value of the node.
+    """
+    if not node:
+        return None
+    
+    if node.node_type == 'NUMBER':
+        val = float(node.value)
+        node.computed_value = val
+        return val
+    
+    if node.node_type == 'ID':
+        # Get value from value_table using original_name
+        val = value_table.get(node.original_name, 0)
+        # Convert to float if marked for coercion
+        if node.type_info == "int to float":
+            val = float(val)
+        node.computed_value = val
+        return val
+    
+    if node.node_type in ['OP', 'ASSIGN']:
+        left_val = direct_execution(node.left, value_table, type_table)
+        right_val = direct_execution(node.right, value_table, type_table)
+        
+        op = node.value
+        if op == '+':
+            result = left_val + right_val
+        elif op == '-':
+            result = left_val - right_val
+        elif op == '*':
+            result = left_val * right_val
+        elif op == '/':
+            result = left_val / right_val if right_val != 0 else 0
+        elif op == 'is' or op == '=':
+            result = right_val
+        else:
+            result = 0
+        
+        node.computed_value = result
+        return result
+    
+    return None
+
+
+class NodeWithExecution:
+    """Extended Node class that includes computed values for JSON serialization"""
+    @staticmethod
+    def to_dict_with_execution(node):
+        if not node:
+            return None
+        
+        result = {
+            'value': node.value,
+            'node_type': node.node_type,
+            'type_info': node.type_info,
+            'computed_value': getattr(node, 'computed_value', None),
+            'left': NodeWithExecution.to_dict_with_execution(node.left),
+            'right': NodeWithExecution.to_dict_with_execution(node.right)
+        }
+        return result
 
 
 # --- Intermediate Code Generator ---
@@ -591,6 +687,29 @@ class HealthResponse(BaseModel):
     service: str
 
 
+# --- Hybrid Pydantic Models ---
+class HybridRequest(BaseModel):
+    code: str = Field(..., description="Source code to process", json_schema_extra={"example": "Z = 2 * y + 2.9 * X"})
+    type_table: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Variable type definitions",
+        json_schema_extra={"example": {"y": "int", "X": "float"}}
+    )
+    value_table: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Variable values for direct execution",
+        json_schema_extra={"example": {"y": 5, "X": 3}}
+    )
+
+
+class HybridResponse(BaseModel):
+    success: bool
+    lexical: Dict
+    syntax_tree: Dict
+    semantic_tree: Dict
+    execution_tree: Dict
+
+
 # --- API Endpoints ---
 @app.post('/api/compile', response_model=CompileResponse, responses={400: {"model": ErrorResponse}})
 async def compile_code(request: CompileRequest):
@@ -680,6 +799,65 @@ async def health_check():
         'status': 'healthy',
         'service': 'compiler-api'
     }
+
+
+# --- Hybrid API Endpoints ---
+@app.post('/api/hybrid/lexical', response_model=LexicalOnlyResponse, responses={400: {"model": ErrorResponse}})
+async def hybrid_lexical_analysis(request: LexicalRequest):
+    """
+    Perform hybrid lexical analysis (uses V1, V2 instead of id1, id2 and "is" instead of "=").
+    """
+    try:
+        tokens, symbol_table = hybrid_lexer(request.code)
+        
+        return {
+            'success': True,
+            'tokens': [{'type': t[0], 'value': t[1], 'original': t[2] if len(t) > 2 else t[1]} for t in tokens],
+            'symbol_table': symbol_table
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post('/api/hybrid/compile', response_model=HybridResponse, responses={400: {"model": ErrorResponse}})
+async def hybrid_compile(request: HybridRequest):
+    """
+    Process code through hybrid approach (4 phases):
+    1. Lexical Analysis (with V1, V2 naming and "is" operator)
+    2. Syntax Analysis
+    3. Semantic Analysis (with type coercion)
+    4. Direct Execution (evaluate tree with user-provided values)
+    """
+    try:
+        # Step 1: Hybrid Lexical Analysis
+        tokens, symbol_table = hybrid_lexer(request.code)
+        
+        # Step 2: Syntax Analysis
+        syntax_tree = Parser(tokens).parse()
+        
+        # Step 3: Semantic Analysis
+        semantic_tree = Parser(tokens).parse()
+        semantic_analysis(semantic_tree, request.type_table)
+        
+        # Step 4: Direct Execution
+        execution_tree = Parser(tokens).parse()
+        semantic_analysis(execution_tree, request.type_table)
+        direct_execution(execution_tree, request.value_table, request.type_table)
+        
+        return {
+            'success': True,
+            'lexical': {
+                'tokens': [{'type': t[0], 'value': t[1], 'original': t[2] if len(t) > 2 else t[1]} for t in tokens],
+                'symbol_table': symbol_table
+            },
+            'syntax_tree': syntax_tree.to_dict(),
+            'semantic_tree': semantic_tree.to_dict(),
+            'execution_tree': NodeWithExecution.to_dict_with_execution(execution_tree)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 if __name__ == '__main__':

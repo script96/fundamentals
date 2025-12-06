@@ -33,6 +33,97 @@ header p {
     font-size: 1.1rem;
 }
 
+/* Tab Navigation */
+.tab-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px 8px 0 0;
+    color: #888;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.tab-btn.active {
+    background: rgba(0, 217, 255, 0.2);
+    border-color: #00d9ff;
+    color: #00d9ff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Value Table Section */
+.value-table-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.value-table-section h3 {
+    color: #ffd700;
+    margin-bottom: 15px;
+}
+
+.value-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.value-input-group label {
+    color: #00ff88;
+    font-weight: 600;
+    min-width: 30px;
+}
+
+.value-input-group input {
+    width: 80px;
+    padding: 8px;
+    font-size: 1rem;
+    font-family: 'Consolas', monospace;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 6px;
+    color: #ffd700;
+    text-align: center;
+}
+
+.value-input-group input:focus {
+    outline: none;
+    border-color: #ffd700;
+}
+
+#hybrid-value-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
 /* Input Section */
 .input-section {
     background: rgba(255, 255, 255, 0.05);
@@ -351,6 +442,48 @@ header p {
 .tree-node-value.coerced {
     border-style: dashed;
     border-width: 3px;
+}
+
+/* Computed Value Display */
+.computed-value {
+    display: block;
+    font-size: 0.75rem;
+    color: #ff6b6b;
+    margin-top: 4px;
+    font-weight: bold;
+}
+
+/* Final Answer Card */
+.final-answer-card {
+    background: rgba(0, 255, 136, 0.05) !important;
+    border-color: rgba(0, 255, 136, 0.3) !important;
+}
+
+.final-answer-card .phase-number {
+    background: linear-gradient(135deg, #00ff88, #00cc6a) !important;
+    color: #000 !important;
+}
+
+.final-answer-box {
+    padding: 20px;
+    text-align: center;
+}
+
+.final-answer-line {
+    font-size: 1.4rem;
+    margin: 10px 0;
+    font-family: 'Consolas', monospace;
+}
+
+.final-answer-line .var-name {
+    color: #00ff88;
+    font-weight: bold;
+}
+
+.final-answer-line .result-value {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1.6rem;
 }
 
 .tree-children {
