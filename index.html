@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compiler Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 Compiler Simulator</h1>
+            <p>Visualize the 6 phases of compilation</p>
+        </header>
+
+        <!-- Input Section -->
+        <section class="input-section">
+            <div class="input-group">
+                <label for="code-input">Source Code</label>
+                <input type="text" id="code-input" placeholder="e.g., Z = 2 * y + 2.9 * X" value="Z = 2 * y + 2.9 * X">
+            </div>
+            
+            <div class="type-table-section" id="type-table-section" style="display: none;">
+                <h3>Variable Types</h3>
+                <div id="type-inputs"></div>
+            </div>
+
+            <div class="button-group">
+                <button id="analyze-btn" class="btn primary">1. Analyze Code</button>
+                <button id="compile-btn" class="btn success" disabled>2. Compile</button>
+                <button id="reset-btn" class="btn secondary">Reset</button>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <div class="results-grid">
+            <!-- Phase 1: Lexical Analysis -->
+            <section class="phase-card">
+                <div class="phase-header">
+                    <span class="phase-number">1</span>
+                    <h2>Lexical Analysis</h2>
+                </div>
+                <div class="phase-content">
+                    <div class="sub-section">
+                        <h4>Tokens</h4>
+                        <div id="tokens-output" class="output-box"></div>
+                    </div>
+                    <div class="sub-section">
+                        <h4>Symbol Table</h4>
+                        <table id="symbol-table" class="data-table">
+                            <thead>
+                                <tr><th>Variable</th><th>ID</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Phase 2: Syntax Analysis -->
+            <section class="phase-card">
+                <div class="phase-header">
+                    <span class="phase-number">2</span>
+                    <h2>Syntax Analysis</h2>
+                </div>
+                <div class="phase-content">
+                    <h4>Parse Tree</h4>
+                    <div id="syntax-tree" class="tree-container"></div>
+                </div>
+            </section>
+
+            <!-- Phase 3: Semantic Analysis -->
+            <section class="phase-card">
+                <div class="phase-header">
+                    <span class="phase-number">3</span>
+                    <h2>Semantic Analysis</h2>
+                </div>
+                <div class="phase-content">
+                    <h4>Annotated Tree (with type coercion)</h4>
+                    <div id="semantic-tree" class="tree-container"></div>
+                </div>
+            </section>
+
+            <!-- Phase 4: Intermediate Code -->
+            <section class="phase-card">
+                <div class="phase-header">
+                    <span class="phase-number">4</span>
+                    <h2>Intermediate Code Generation</h2>
+                </div>
+                <div class="phase-content">
+                    <pre id="icg-output" class="code-output"></pre>
+                </div>
+            </section>
+
+            <!-- Phase 5: Code Optimization -->
+            <section class="phase-card">
+                <div class="phase-header">
+                    <span class="phase-number">5</span>
+                    <h2>Code Optimization</h2>
+                </div>
+                <div class="phase-content">
+                    <pre id="optimized-output" class="code-output"></pre>
+                </div>
+            </section>
+
+            <!-- Phase 6: Code Generation -->
+            <section class="phase-card">
+                <div class="phase-header">
+                    <span class="phase-number">6</span>
+                    <h2>Code Generation</h2>
+                </div>
+                <div class="phase-content">
+                    <h4>Assembly Code</h4>
+                    <pre id="assembly-output" class="code-output assembly"></pre>
+                </div>
+            </section>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error-display" class="error-box" style="display: none;"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

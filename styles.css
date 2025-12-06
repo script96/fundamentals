@@ -1,0 +1,436 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: #e4e4e4;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: #00d9ff;
+    margin-bottom: 5px;
+}
+
+header p {
+    color: #888;
+    font-size: 1.1rem;
+}
+
+/* Input Section */
+.input-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #00d9ff;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(0, 217, 255, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #00d9ff;
+}
+
+/* Type Table Section */
+.type-table-section {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.type-table-section h3 {
+    color: #00d9ff;
+    margin-bottom: 15px;
+}
+
+#type-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.type-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.type-input-group label {
+    font-family: 'Consolas', monospace;
+    color: #ffd700;
+}
+
+.type-input-group select {
+    padding: 8px 15px;
+    font-size: 1rem;
+    background: #1a1a2e;
+    border: 1px solid #00d9ff;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Buttons */
+.button-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, #00d9ff, #0099cc);
+    color: #000;
+}
+
+.btn.primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 217, 255, 0.4);
+}
+
+.btn.success {
+    background: linear-gradient(135deg, #00ff88, #00cc6a);
+    color: #000;
+}
+
+.btn.success:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 255, 136, 0.4);
+}
+
+.btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Results Grid */
+.results-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Phase Cards */
+.phase-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.phase-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(0, 217, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.phase-number {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #00d9ff;
+    color: #000;
+    font-weight: bold;
+    border-radius: 50%;
+    font-size: 1.1rem;
+}
+
+.phase-header h2 {
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.phase-content {
+    padding: 20px;
+    min-height: 200px;
+}
+
+.phase-content h4 {
+    color: #888;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+/* Output Boxes */
+.output-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Consolas', monospace;
+    min-height: 50px;
+    word-wrap: break-word;
+}
+
+.code-output {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    min-height: 100px;
+    white-space: pre-wrap;
+    color: #00ff88;
+}
+
+.code-output.assembly {
+    color: #ffd700;
+}
+
+/* Data Tables */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 10px 15px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-table th {
+    background: rgba(0, 217, 255, 0.1);
+    color: #00d9ff;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.data-table td {
+    font-family: 'Consolas', monospace;
+}
+
+/* Tree Container */
+.tree-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 30px;
+    min-height: 200px;
+    overflow-x: auto;
+    position: relative;
+}
+
+.tree-wrapper {
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.tree-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.tree-svg line {
+    stroke: #00d9ff;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.tree-nodes {
+    position: relative;
+    z-index: 2;
+}
+
+/* Tree Visualization */
+.tree-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.tree-node-value {
+    padding: 10px 18px;
+    background: #1e1e2e;
+    color: #00d9ff;
+    font-weight: 600;
+    border-radius: 25px;
+    font-family: 'Consolas', monospace;
+    min-width: 45px;
+    text-align: center;
+    font-size: 0.95rem;
+    border: 2px solid #00d9ff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    position: relative;
+    z-index: 2;
+}
+
+.tree-node-value.operator {
+    background: #2e1e1e;
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+.tree-node-value.id {
+    background: #1e2e1e;
+    color: #00ff88;
+    border-color: #00ff88;
+}
+
+.tree-node-value.number {
+    background: #2e2e1e;
+    color: #ffd700;
+    border-color: #ffd700;
+}
+
+.tree-node-value.coerced {
+    border-style: dashed;
+    border-width: 3px;
+}
+
+.tree-children {
+    display: flex;
+    gap: 25px;
+    margin-top: 40px;
+    position: relative;
+}
+
+.tree-child {
+    position: relative;
+}
+
+/* Token Styling */
+.token {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 3px;
+    border-radius: 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.9rem;
+}
+
+.token.ID { background: #00ff88; color: #000; }
+.token.NUMBER { background: #ffd700; color: #000; }
+.token.OP { background: #ff6b6b; color: #fff; }
+.token.ASSIGN { background: #ff6b6b; color: #fff; }
+.token.LPAREN, .token.RPAREN { background: #9b59b6; color: #fff; }
+
+/* Error Box */
+.error-box {
+    background: rgba(255, 107, 107, 0.2);
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    color: #ff6b6b;
+}
+
+/* Sub Sections */
+.sub-section {
+    margin-bottom: 20px;
+}
+
+.sub-section:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.phase-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.phase-card:nth-child(1) { animation-delay: 0.1s; }
+.phase-card:nth-child(2) { animation-delay: 0.2s; }
+.phase-card:nth-child(3) { animation-delay: 0.3s; }
+.phase-card:nth-child(4) { animation-delay: 0.4s; }
+.phase-card:nth-child(5) { animation-delay: 0.5s; }
+.phase-card:nth-child(6) { animation-delay: 0.6s; }
